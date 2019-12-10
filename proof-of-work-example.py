@@ -3,13 +3,6 @@
 from utils import *
 import time
 
-try:
-    long        # Python 2
-    xrange
-except NameError:
-    long = int  # Python 3
-    xrange = range
-
 max_nonce = 2 ** 32  # 4 billion
 
 def proof_of_work(header, difficulty_bits):
@@ -25,7 +18,7 @@ def proof_of_work(header, difficulty_bits):
             print("Hash is %s" % hash_result)
             return (hash_result, nonce)
 
-    print("Failed after %d (max_nonce) tries" % nonce)
+    print "Failed after %d (max_nonce) tries" % nonce
     return nonce
 
 if __name__ == '__main__':
@@ -35,8 +28,8 @@ if __name__ == '__main__':
     # difficulty from 0 to 31 bits
     for difficulty_bits in xrange(32):
         difficulty = 2 ** difficulty_bits
-        print("Difficulty: %ld (%d bits)" % (difficulty, difficulty_bits))
-        print("Starting search...")
+        print "Difficulty: %ld (%d bits)" % (difficulty, difficulty_bits)
+        print "Starting search..."
 
         # checkpoint the current time
         start_time = time.time()
@@ -52,9 +45,9 @@ if __name__ == '__main__':
         end_time = time.time()
 
         elapsed_time = end_time - start_time
-        print("Elapsed Time: %.4f seconds" % elapsed_time)
+        print "Elapsed Time: %.4f seconds" % elapsed_time
 
         if elapsed_time > 0:
             # estimate the hashes per second
             hash_power = float(long(nonce) / elapsed_time)
-            print("Hashing Power: %ld hashes per second" % hash_power)
+            print "Hashing Power: %ld hashes per second" % hash_power

@@ -44,8 +44,8 @@ class tx_input:
         raw += self.scriptSig.decode('hex')[::-1]
         return raw
     
-    def get_json(self):
-        return json.dumps(self.__dict__)
+    def get_dict(self):
+        return self.__dict__
 
 class tx_output:
     def __init__(self, value, lengthOfScriptPubKey, scriptPubKey):
@@ -60,8 +60,8 @@ class tx_output:
         raw += self.scriptPubKey.decode('hex')[::-1]
         return raw
 
-    def get_json(self):
-        return json.dumps(self.__dict__)
+    def get_dict(self):
+        return self.__dict__
 
 class tx:
     def __init__(self, sum_tx_input, tx_inputs, sum_tx_output, tx_outputs):
@@ -81,13 +81,13 @@ class tx:
             raw += self.tx_outputs[i].get_raw()
         return raw
 
-    def get_json(self):
+    def get_dict(self):
         tx_dict = copy.deepcopy(self.__dict__)
         for i in range(self.sum_tx_input):
             tx_dict['tx_inputs'][i] = copy.deepcopy(self.tx_inputs[i].__dict__)
         for i in range(self.sum_tx_output):
             tx_dict['tx_outputs'][i] = copy.deepcopy(self.tx_outputs[i].__dict__)
-        return json.dumps(tx_dict)
+        return tx_dict
 
 class block:
     def __init__(self, block_size, version, prev_hash, merkle_root, timestamp, nbits, nonce, sum_tx, txs):
@@ -124,7 +124,7 @@ class block:
             raw += tx.get_raw()
         return raw
 
-    def get_json(self):
+    def get_dict(self):
         block_dict = copy.deepcopy(self.__dict__)
         for i in range(self.sum_tx):
             tx_dict = copy.deepcopy(block_dict['txs'][i].__dict__)
@@ -133,7 +133,7 @@ class block:
             for j in range(block_dict['txs'][i].sum_tx_output):
                 tx_dict['tx_outputs'][j] = copy.deepcopy(block_dict['txs'][i].tx_outputs[j].__dict__)
             block_dict['txs'][i] = tx_dict
-        return json.dumps(block_dict)
+        return block_dict
 
 class fstring():
     def __init__(self, data):
