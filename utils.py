@@ -10,25 +10,6 @@ __author__ = 'assassinq'
 # hash256 = lambda m: hashlib.sha256(hashlib.sha256(m).hexdigest()).hexdigest().decode('hex')[::-1].encode('hex')
 hash256 = lambda m: sm3(sm3(m)).decode('hex')[::-1].encode('hex')
 
-def cal_merkle_root(tx_hashes):
-    if len(tx_hashes) == 0:
-        print '[!] No tx...'
-        exit()
-    elif len(tx_hashes) == 1:
-        return tx_hashes[0]
-    else:
-        if len(tx_hashes) % 2 == 1:
-            new_tx_hashes = []
-            for i in range(len(tx_hashes) / 2):
-                new_tx_hashes.append(hash256(tx_hashes[2 * i] + tx_hashes[2 * i + 1]))
-            new_tx_hashes.append(hash256(tx_hashes[-1]) * 2)
-            return cal_merkle_root(new_tx_hashes)
-        else:
-            new_tx_hashes = []
-            for i in range(len(tx_hashes) / 2):
-                new_tx_hashes.append(hash256(tx_hashes[2 * i] + tx_hashes[2 * i + 1]))
-            return cal_merkle_root(new_tx_hashes)
-
 class tx_input:
     def __init__(self, tx_id, idx, lengthOfScriptSig, scriptSig):
         self.tx_id = tx_id
@@ -229,4 +210,52 @@ class parse_block:
 
     def get_block(self):
         return block(self.block_size, self.version, self.prev_hash, self.merkle_root, self.timestamp, self.nbits, self.nonce, self.sum_tx, self.txs)
+
+def cal_tx_hashes(txs):
+    tx_hashes = []
+    for tx in txs:
+        tx_hashes.append(hash256(tx.get_raw()))
+    return tx_hashes
+
+def cal_merkle_root(tx_hashes):
+    if len(tx_hashes) == 0:
+        print '[!] No tx...'
+        exit()
+    elif len(tx_hashes) == 1:
+        return tx_hashes[0]
+    else:
+        if len(tx_hashes) % 2 == 1:
+            new_tx_hashes = []
+            for i in range(len(tx_hashes) / 2):
+                new_tx_hashes.append(hash256(tx_hashes[2 * i] + tx_hashes[2 * i + 1]))
+            new_tx_hashes.append(hash256(tx_hashes[-1]) * 2)
+            return cal_merkle_root(new_tx_hashes)
+        else:
+            new_tx_hashes = []
+            for i in range(len(tx_hashes) / 2):
+                new_tx_hashes.append(hash256(tx_hashes[2 * i] + tx_hashes[2 * i + 1]))
+            return cal_merkle_root(new_tx_hashes)
+
+def cal_header(version, prev_hash, merkle_root, timestamp, nbits):
+    raw = ''
+    raw += hex(version)[2:].zfill(8).decode('hex')[::-1]
+    raw += prev_hash.decode('hex')[::-1]
+    raw += merkle_root.decode('hex')[::-1]
+    raw += hex(timestamp)[2:].zfill(8).decode('hex')[::-1]
+    raw += hex(nbits)[2:].zfill(8).decode('hex')[::-1]
+    return raw
+
+def proof_of_work(header, difficulty_bits):
+    # calculate the difficulty target
+    target = 2 ** (256 - difficulty_bits)
+    nonce = 0
+
+    while True:
+        hash_result = hash256(header + str(nonce))
+        # check if this is a valid result, below the target
+        if long(hash_result, 16) < target:
+            print "Success with nonce %d" % nonce
+            print "Hash is %s" % hash_result
+            return (hash_result, nonce)
+        nonce += 1
 
