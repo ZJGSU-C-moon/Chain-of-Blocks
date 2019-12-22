@@ -5,7 +5,8 @@ from config import *
 from utils import *
 from sm2 import *
 
-db = MySQLdb.connect(host=db_host, user=db_user, passwd=db_pass, charset='utf8')
+db = MySQLdb.connect(host=db_host, user=db_user,
+                     passwd=db_pass, charset='utf8')
 cursor = db.cursor()
 
 sql = "DROP DATABASE IF EXISTS chain;"
@@ -21,7 +22,7 @@ cursor.execute(sql)
 db.commit()
 
 sql = "CREATE TABLE UTXO(id INT PRIMARY KEY AUTO_INCREMENT,UTXO TEXT(500), OWNER TEXT(800), IF_USE CHAR(1));"
-cursor.execute(sql)	
+cursor.execute(sql)
 db.commit()
 
 sql = "CREATE TABLE TXS(id INT PRIMARY KEY AUTO_INCREMENT, TXS_HEX TEXT(500),IF_PACK CHAR(1));"

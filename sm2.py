@@ -1,28 +1,36 @@
 #!/usr/bin/env python
-#-*- encoding=utf-8 -*-
+# -*- encoding=utf-8 -*-
 from random import choice
 import hashlib
 import bitcoin
 from sm3 import *
 
 # 选择素域，设置椭圆曲线参数
-sm2_N = int('FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFF7203DF6B21C6052B53BBF40939D54123', 16)
-sm2_P = int('FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFF', 16)
+sm2_N = int(
+    'FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFF7203DF6B21C6052B53BBF40939D54123', 16)
+sm2_P = int(
+    'FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFF', 16)
 sm2_G = '32c4ae2c1f1981195f9904466a39c9948fe30bbff2660be1715a4589334c74c7bc3736a2f4f6779c59bdcee36b692153d0a9877cc62a474002df32e52139f0a0'  # G点
-sm2_a = int('FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFC', 16)
-sm2_b = int('28E9FA9E9D9F5E344D5A9E4BCF6509A7F39789F515AB8F92DDBCBD414D940E93', 16)
-sm2_a_3 = (sm2_a + 3) % sm2_P # 倍点用到的中间值
+sm2_a = int(
+    'FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFC', 16)
+sm2_b = int(
+    '28E9FA9E9D9F5E344D5A9E4BCF6509A7F39789F515AB8F92DDBCBD414D940E93', 16)
+sm2_a_3 = (sm2_a + 3) % sm2_P  # 倍点用到的中间值
 Fp = 256
 len_para = 64
 
-#随机获得一个16进制的数
+# 随机获得一个16进制的数
+
+
 def get_random_str(strlen):
-    letterlist = ['0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f']
+    letterlist = ['0', '1', '2', '3', '4', '5', '6',
+                  '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f']
     str = ''
     for i in range(strlen):
         a = choice(letterlist)
-        str = '%s%s' % (str,a)
+        str = '%s%s' % (str, a)
     return str
+
 
 def generate_random_private_key():
 
@@ -51,10 +59,11 @@ def kG(k, Point):  # kP运算
         k = k << 1
     return ConvertJacb2Nor(Temp)
 
+
 def DoublePoint(Point):  # 倍点
     l = len(Point)
     len_2 = 2 * len_para
-    if l< len_para*2:
+    if l < len_para*2:
         return None
     else:
         x1 = int(Point[0:len_para], 16)
@@ -91,6 +100,7 @@ def DoublePoint(Point):  # 倍点
         form = '%%0%dx' % len_para
         form = form * 3
         return form % (x3, y3, z3)
+
 
 def AddPoint(P1, P2):  # 点加函数，P2点为仿射坐标即z=1，P1为Jacobian加重射影坐标
     len_2 = 2 * len_para
@@ -131,7 +141,8 @@ def AddPoint(P1, P2):  # 点加函数，P2点为仿射坐标即z=1，P1为Jacobi
         form = form * 3
         return form % (X3, Y3, Z3)
 
-def ConvertJacb2Nor(Point): # Jacobian加重射影坐标转换成仿射坐标
+
+def ConvertJacb2Nor(Point):  # Jacobian加重射影坐标转换成仿射坐标
     len_2 = 2 * len_para
     x = int(Point[0:len_para], 16)
     y = int(Point[len_para:len_2], 16)
@@ -148,8 +159,9 @@ def ConvertJacb2Nor(Point): # Jacobian加重射影坐标转换成仿射坐标
         form = form * 2
         return form % (x_new, y_new)
     else:
-        print ("Point at infinity!!!!!!!!!!!!")
+        print("Point at infinity!!!!!!!!!!!!")
         return None
+
 
 def Inverse(data, M):  # 求逆，可用pow()代替
     tempM = M - 2
@@ -168,26 +180,26 @@ def Inverse(data, M):  # 求逆，可用pow()代替
 
     return tempA
 
-def bitcoin_address_from_public_key(public_key): # 参数为str类型
+
+def bitcoin_address_from_public_key(public_key):  # 参数为str类型
     return bitcoin.pubkey_to_address(public_key.encode('utf-8'))
+
 
 def keygen():
     #len_para = int(Fp / 4)
-    #print len_para
+    # print len_para
+    Pa = kG(int(d, 16), sm2_G)  # 生成公钥
     d = generate_random_private_key()
-    k = get_random_str(len_para) #随机数k
-
-    Pa = kG(int(d, 16), sm2_G) #生成公钥对
-    bitcoin_address = bitcoin_address_from_public_key(Pa)
     pk, sk = Pa, d
     return pk, sk
 
+
 def sign(E, DA, Hexstr=1):  # 签名函数 E消息的hash，DA私钥，K随机数，均为16进制字符串
     if Hexstr:
-        e = int(E, 16) # 输入消息本身是16进制字符串
+        e = int(E, 16)  # 输入消息本身是16进制字符串
     else:
         E = E.encode('utf-8')
-        E = E.hex() # 消息转化为16进制字符串
+        E = E.hex()  # 消息转化为16进制字符串
         e = int(E, 16)
 
     d = int(DA, 16)
@@ -205,7 +217,8 @@ def sign(E, DA, Hexstr=1):  # 签名函数 E消息的hash，DA私钥，K随机�
     if S == 0:
         return None
     else:
-        return '%064x%064x' % (R,S)
+        return '%064x%064x' % (R, S)
+
 
 def verify(sig, E, PA):  # 验签函数，sign签名r||s，E消息的hash，PA公钥
     len_para = 64
@@ -231,6 +244,7 @@ def verify(sig, E, PA):  # 验签函数，sign签名r||s，E消息的hash，PA�
     x = int(P1[0:len_para], 16)
     return (r == ((e + x) % sm2_N))
 
+
 if __name__ == '__main__':
     pk, sk = keygen()
     print pk
@@ -239,4 +253,3 @@ if __name__ == '__main__':
     sig = sign(h, sk)
     res = verify(sig, h, pk)
     print res
-

@@ -1,3 +1,3 @@
 # Chain-of-Blocks
 
-Our Final Work of Cryptocurrencies and Blockchain Technology. A Mini DApp Based on Python.
+Our Final Work of Cryptocurrencies and Blockchain Technology. A mini coin (using SM2 & SM3) based on Python.

@@ -6,6 +6,7 @@ from utils import *
 
 __author__ = 'assassinq'
 
+
 def pack():
     tx_inputs = []
     tx_input1 = tx_input('0' * 64, 0, 3, '123456')
@@ -48,16 +49,18 @@ def pack():
     for i in range(len(txs)):
         tx_hashes.append(txs[i].self_hash)
     merkle_root = cal_merkle_root(tx_hashes)
-    timestamp = 1575537538 # int(time.time())
+    timestamp = 1575537538  # int(time.time())
     nbits = 24
     nonce = 1234567
     blocks = []
-    block1 = block(block_size, version, '0' * 64, merkle_root, timestamp, nbits, nonce, len(txs), txs)
+    block1 = block(block_size, version, '0' * 64, merkle_root,
+                   timestamp, nbits, nonce, len(txs), txs)
     blocks.append(block1)
     print block1.get_dict()
     data = block1.get_raw().encode('hex')
     print data
     return data
+
 
 def parse_tx_test(data):
     try:
@@ -68,6 +71,7 @@ def parse_tx_test(data):
     except Exception as e:
         print '[!] Error => ', e
 
+
 def parse_block_test(data):
     try:
         data = data.decode('hex')
@@ -77,10 +81,10 @@ def parse_block_test(data):
     except Exception as e:
         print '[!] Error => ', e
 
+
 if __name__ == '__main__':
     print '===== GENERATE ====='
     data = pack()
     print '===== PARSE ====='
     # parse_tx_test()
     parse_block_test(data)
-

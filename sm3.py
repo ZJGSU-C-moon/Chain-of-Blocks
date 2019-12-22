@@ -1,9 +1,8 @@
 #!/usr/bin/env python
-#-*- encoding=utf-8 -*-
-
+# -*- encoding=utf-8 -*-
 from math import ceil
 
-IV="7380166f 4914b2b9 172442d7 da8a0600 a96f30bc 163138aa e38dee4d b0fb0e4e"
+IV = "7380166f 4914b2b9 172442d7 da8a0600 a96f30bc 163138aa e38dee4d b0fb0e4e"
 IV = int(IV.replace(" ", ""), 16)
 a = []
 for i in range(0, 8):
@@ -11,14 +10,17 @@ for i in range(0, 8):
     a[i] = (IV >> ((7 - i) * 32)) & 0xFFFFFFFF
 IV = a
 
+
 def out_hex(list1):
     for i in list1:
         print("%08x" % i)
     print("\n")
 
+
 def rotate_left(a, k):
     k = k % 32
     return ((a << k) & 0xFFFFFFFF) | ((a & 0xFFFFFFFF) >> (32 - k))
+
 
 T_j = []
 for i in range(0, 16):
@@ -28,12 +30,14 @@ for i in range(16, 64):
     T_j.append(0)
     T_j[i] = 0x7a879d8a
 
+
 def FF_j(X, Y, Z, j):
     if 0 <= j and j < 16:
         ret = X ^ Y ^ Z
     elif 16 <= j and j < 64:
         ret = (X & Y) | (X & Z) | (Y & Z)
     return ret
+
 
 def GG_j(X, Y, Z, j):
     if 0 <= j and j < 16:
@@ -43,18 +47,21 @@ def GG_j(X, Y, Z, j):
         ret = (X & Y) | ((~ X) & Z)
     return ret
 
+
 def P_0(X):
     return X ^ (rotate_left(X, 9)) ^ (rotate_left(X, 17))
 
+
 def P_1(X):
     return X ^ (rotate_left(X, 15)) ^ (rotate_left(X, 23))
+
 
 def CF(V_i, B_i):
     W = []
     for i in range(16):
         weight = 0x1000000
         data = 0
-        for k in range(i*4,(i+1)*4):
+        for k in range(i*4, (i+1)*4):
             if type(B_i[k]) == str:
                 B_i[k] = ord(B_i[k])
             data = data + B_i[k]*weight
@@ -63,7 +70,8 @@ def CF(V_i, B_i):
 
     for j in range(16, 68):
         W.append(0)
-        W[j] = P_1(W[j-16] ^ W[j-9] ^ (rotate_left(W[j-3], 15))) ^ (rotate_left(W[j-13], 7)) ^ W[j-6]
+        W[j] = P_1(W[j-16] ^ W[j-9] ^ (rotate_left(W[j-3], 15))
+                   ) ^ (rotate_left(W[j-13], 7)) ^ W[j-6]
         str1 = "%08x" % W[j]
     W_1 = []
     for j in range(0, 64):
@@ -77,7 +85,8 @@ def CF(V_i, B_i):
     out_hex([A, B, C, D, E, F, G, H])
     """
     for j in range(0, 64):
-        SS1 = rotate_left(((rotate_left(A, 12)) + E + (rotate_left(T_j[j], j))) & 0xFFFFFFFF, 7)
+        SS1 = rotate_left(((rotate_left(A, 12)) + E +
+                           (rotate_left(T_j[j], j))) & 0xFFFFFFFF, 7)
         SS2 = SS1 ^ (rotate_left(A, 12))
         TT1 = (FF_j(A, B, C, j) + D + SS2 + W_1[j]) & 0xFFFFFFFF
         TT2 = (GG_j(E, F, G, j) + H + SS1 + W[j]) & 0xFFFFFFFF
@@ -116,6 +125,7 @@ def CF(V_i, B_i):
     V_i_1.append(G ^ V_i[6])
     V_i_1.append(H ^ V_i[7])
     return V_i_1
+
 
 def hash_msg(msg):
     # print(msg)
@@ -158,38 +168,43 @@ def hash_msg(msg):
         result = '%s%08x' % (result, i)
     return result
 
-def str2byte(msg): # 字符串转换成byte数组
+
+def str2byte(msg):  # 字符串转换成byte数组
     ml = len(msg)
     msg_byte = []
     for i in range(ml):
         msg_byte.append(msg[i])
     return msg_byte
 
-def byte2str(msg): # byte数组转字符串
+
+def byte2str(msg):  # byte数组转字符串
     ml = len(msg)
     str1 = b""
     for i in range(ml):
         str1 += b'%c' % msg[i]
     return str1.decode('utf-8')
 
-def hex2byte(msg): # 16进制字符串转换成byte数组
+
+def hex2byte(msg):  # 16进制字符串转换成byte数组
     ml = len(msg)
     if ml % 2 != 0:
-        msg = '0'+ msg
+        msg = '0' + msg
     ml = int(len(msg)/2)
     msg_byte = []
     for i in range(ml):
-        msg_byte.append(int(msg[i*2:i*2+2],16))
+        msg_byte.append(int(msg[i*2:i*2+2], 16))
     return msg_byte
 
-def byte2hex(msg): # byte数组转换成16进制字符串
+
+def byte2hex(msg):  # byte数组转换成16进制字符串
     ml = len(msg)
     hexstr = ""
     for i in range(ml):
-        hexstr = hexstr + ('%02x'% msg[i])
+        hexstr = hexstr + ('%02x' % msg[i])
     return hexstr
 
-def sm3(msg,Hexstr = 0):
+
+def sm3(msg, Hexstr=0):
     if(Hexstr):
         msg_byte = hex2byte(msg)
     else:
@@ -197,19 +212,20 @@ def sm3(msg,Hexstr = 0):
     return hash_msg(msg_byte)
 
 
-def KDF(Z,klen): # Z为16进制表示的比特串（str），klen为密钥长度（单位byte）
+def KDF(Z, klen):  # Z为16进制表示的比特串（str），klen为密钥长度（单位byte）
     klen = int(klen)
     ct = 0x00000001
     rcnt = ceil(klen/32)
     Zin = hex2byte(Z)
     Ha = ""
     for i in range(rcnt):
-        msg = Zin  + hex2byte('%08x'% ct)
+        msg = Zin + hex2byte('%08x' % ct)
         # print(msg)
         Ha = Ha + hash_msg(msg)
         # print(Ha)
         ct += 1
     return Ha[0: klen * 2]
+
 
 if __name__ == '__main__':
     y = sm3("assassinq"*100)
@@ -217,6 +233,3 @@ if __name__ == '__main__':
 
     # klen = 19
     # print(KDF("57E7B63623FAE5F08CDA468E872A20AFA03DED41BF1403770E040DC83AF31A67991F2B01EBF9EFD8881F0A0493000603", klen))
-
-
-
