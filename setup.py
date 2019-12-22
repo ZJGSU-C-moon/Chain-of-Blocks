@@ -52,17 +52,7 @@ print '[!] passwd =', passwd
 db_operate(4, 'admin', sm3(passwd), [pk, sk])
 
 print 'Now start creating genesis block!'
-tx_inputs = []
 info = 'this is a small blockchain system based on sm.'
-tx_input1 = tx_input('0' * 64, 0, len(info), info.encode('hex'))
-tx_inputs.append(tx_input1)
-tx_outputs = []
-tx_output1 = tx_output(50, 64, str(pk))
-tx_outputs.append(tx_output1)
-init_tx = tx(len(tx_inputs), tx_inputs, len(tx_outputs), tx_outputs)
-tx_hex = init_tx.get_raw().encode('hex')
-db_operate(choice=6, txs_hex=tx_hex)
-
-init_block = mining([init_tx])
+init_block = mining([], pk, info)
 
 db.close()

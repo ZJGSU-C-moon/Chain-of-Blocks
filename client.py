@@ -6,28 +6,13 @@ from utils import *
 import getpass
 
 
-def generate_utxo(pk, value):
-    pass
-
-
-def create_tx(src_pk, dst_pk):
-    tx_inputs = []
-    tx_input1 = tx_input('0' * 64, 0, 3, '123456')  # utxo
-    tx_inputs.append(tx_input1)
-    tx_outputs = []
-    tx_output1 = tx_output(50, 3, 'abcdef')  # transfer
-    tx_outputs.append(tx_output1)
-    tx_output2 = tx_output(99, 3, 'abcdef')  # fee
-    tx_outputs.append(tx_output2)
-    tx_output3 = tx_output(43, 3, 'abcdef')  # charge
-    tx_outputs.append(tx_output3)
-    new_tx = tx(len(tx_inputs), tx_inputs, len(tx_outputs), tx_outputs)
-    txs = new_tx.get_raw().encode('hex')
-    db_operate(choice=6, txs_hex=txs)
-    return new_tx
+username = ''
+pk = ''
+sk = ''
 
 
 def login():
+    print '=== Welcome to C-moon coin system ==='
     print 'login or register new account:'
     print '1.login'
     print '2.register'
@@ -63,19 +48,34 @@ def login():
         return False
 
 
-def x():
-    txs = []
-    tx1 = create_tx('123', '456')
-    txs.append(tx1)
-    new_block = mining(txs)
-    exit()
+def wallet():
+    print '=== Wallet interface ==='
+    print 'choose an option:'
+    print '1.create a tx'
+    print '2.start mining'
+    print '3.exit'
+    choice = raw_input('choose:')
+    if choice == '1':
+        src_pk = raw_input('Please input your pk:')
+        dst_pk = raw_input('Please input the other pk:')
+        value = raw_input('Please input the tx fee:')
+        tx = create_tx(src_pk, src_pk, value)
+        #db_operate()
+        return True
+    elif choice == '2':
+        #txs = db_operate()
+        new_block = mining(txs, pk)
+        return True:
+    elif choice == '3':
+        exit()
+    else:
+        return False
 
 
 if __name__ == '__main__':
     while True:
         if login():
             break
-    raw_input('@')
     while True:
-        x()
+        wallet()
 
