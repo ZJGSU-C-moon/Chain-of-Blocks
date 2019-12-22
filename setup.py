@@ -18,11 +18,11 @@ sql = "USE chain;"
 cursor.execute(sql)
 db.commit()
 
-sql = "CREATE TABLE UTXO(UTXO CHAR(200), OWNER CHAR(100), IF_USE CHAR(1));"
+sql = "CREATE TABLE UTXO(id INT PRIMARY KEY AUTO_INCREMENT,UTXO CHAR(200), OWNER CHAR(100), IF_USE CHAR(1));"
 cursor.execute(sql)	
 db.commit()
 
-sql = "CREATE TABLE TXS(TXS_HEX TEXT(500));"
+sql = "CREATE TABLE TXS(id INT PRIMARY KEY AUTO_INCREMENT, TXS_HEX TEXT(500),IF_PACK CHAR(1));"
 cursor.execute(sql)
 db.commit()
 
@@ -31,7 +31,7 @@ cursor.execute(sql)
 db.commit()
 
 
-sql = "CREATE TABLE USER(USERNAME CHAR(30), USER_PK CHAR(100),USER_SK CHAR(100));"
+sql = "CREATE TABLE USER(USERNAME CHAR(30), USER_PK TEXT(800),USER_SK TEXT(800));"
 cursor.execute(sql)
 db.commit()
 
