@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import MySQLdb
 import random
+from sm2 import *
 from utils import *
 from config import *
 
@@ -85,8 +86,7 @@ def login():
 	results = CURSOR.fetchall()
 	if len(results) == 0:
 	    create_user()
-	    pk = '0'
-	    sk = '0'
+            pk, sk = keygen()
 	    sql = "INSERT INTO USER(USERNAME,USER_PK,USER_SK) VALUES ('%s','%s','%s')" % (username,pk,sk)
 	    CURSOR.execute(sql)
 	    DB.commit()
