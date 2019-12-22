@@ -5,7 +5,7 @@ from sm2 import *
 from utils import *
 import getpass
 
-
+info = {}
 username = ''
 pk = ''
 sk = ''
@@ -56,10 +56,15 @@ def wallet():
     print '3.exit'
     choice = raw_input('choose:')
     if choice == '1':
-        src_pk = raw_input('Please input your pk:')
-        dst_pk = raw_input('Please input the other pk:')
+        src_username = raw_input('Please input your name:')
+        dst_usernames = raw_input('Please input the other name(Multiple,separated by spaces):').split()
         value = raw_input('Please input the tx fee:')
-        tx = create_tx(src_pk, src_pk, value)
+        src_pk = db_operate(8,src_username)
+        dst_pks = []
+        for dst_username in dst_usernames:
+            dst_pk=db_operate(8,dst_username)
+            dst_pks.append(dst_pk)
+        tx = create_tx(src_pk, dst_pks, value)
         #db_operate()
         return True
     elif choice == '2':

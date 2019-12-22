@@ -289,6 +289,7 @@ def db_operate(choice, username=None, password=None, key=[], block_hex=None, txs
     # 5:将打包的BLCOK_HEX传入数据库
     # 6:存入交易
     # 7:存入被放进区块的utxo
+    # 8:查找用户公钥
     # :将已使用的utxo的字段IF_USE改为1
 
     DB = MySQLdb.connect(db_host, db_user, db_pass, 'chain')
@@ -342,6 +343,16 @@ def db_operate(choice, username=None, password=None, key=[], block_hex=None, txs
         sql = "INSERT INTO UTXO(UTXO,OWNER,IF_USE) VALUES ('%s','%s','%s')" % (utxo, user_pk, '0')
         CURSOR.execute(sql)
         DB.commit()
+    elif choice == 8:  # 查找用户公钥
+        sql = "SELECT * FROM USER WHERE USERNAME='%s'" % (username)
+        CURSOR.execute(sql)
+        results = CURSOR.fetchall()
+        if len(results) == 0:
+            return True
+        for row in results:
+            username = row[0]
+            pk = row[2]
+        return pk
     DB.close()
 
 
@@ -355,7 +366,7 @@ def get_utxo(block):
     return res
 
 
-def create_tx(src_pk, dst_pk, value=0, info='', is_coinbase=False):
+def create_tx(src_pk, dst_pks, value=0, info='', is_coinbase=False):
     tx_inputs = []
     if is_coinbase:
         tx_input1 = tx_input('0' * 64, 0, len(info), info[::-1].encode('hex'))  # utxo
@@ -365,15 +376,16 @@ def create_tx(src_pk, dst_pk, value=0, info='', is_coinbase=False):
         tx_inputs.append(tx_input1)
     tx_outputs = []
     if is_coinbase:
-        tx_output1 = tx_output(50, 128, dst_pk)  # transfer
+        tx_output1 = tx_output(50, 128, dst_pks)  # transfer
         tx_outputs.append(tx_output1)
     else:
-        tx_output1 = tx_output(value, 128, dst_pk)  # transfer
-        tx_outputs.append(tx_output1)
-        #tx_output2 = tx_output(value, 64, dst_pk.decode('hex'))  # fee
-        #tx_outputs.append(tx_output2)
-        #tx_output3 = tx_output(utxo - value, 64, src_pk.decode('hex'))  # charge
-        #tx_outputs.append(tx_output3)
+        for dst_pk in dst_pks:
+            tx_output1 = tx_output(value, 128, dst_pk)  # transfer
+            tx_outputs.append(tx_output1)
+            #tx_output2 = tx_output(value, 64, dst_pk.decode('hex'))  # fee
+            #tx_outputs.append(tx_output2)
+            #tx_output3 = tx_output(utxo - value, 64, src_pk.decode('hex'))  # charge
+            #tx_outputs.append(tx_output3)
     new_tx = tx(len(tx_inputs), tx_inputs, len(tx_outputs), tx_outputs)
     print new_tx.get_dict()
     txs = new_tx.get_raw().encode('hex')
