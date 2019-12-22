@@ -20,7 +20,7 @@ sql = "USE chain;"
 cursor.execute(sql)
 db.commit()
 
-sql = "CREATE TABLE UTXO(id INT PRIMARY KEY AUTO_INCREMENT,UTXO CHAR(200), OWNER CHAR(100), IF_USE CHAR(1));"
+sql = "CREATE TABLE UTXO(id INT PRIMARY KEY AUTO_INCREMENT,UTXO TEXT(500), OWNER TEXT(800), IF_USE CHAR(1));"
 cursor.execute(sql)	
 db.commit()
 

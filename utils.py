@@ -260,14 +260,15 @@ def proof_of_work(header, difficulty_bits):
             return (hash_result, nonce)
         nonce += 1
 
-def db_operate(choice,username='NULL',key=[],block_hex='NULL',txs_hex='NULL'):
+def db_operate(choice,username=None,key=[],block_hex=None,txs_hex=None,utxo=None,user_pk=None):
 #1:传出一个时间最久但未被打包使用的交易并将其IF_PACK设置为0
 #2:查询用户公私钥 如果没有成功返回0,0 否则 pk,sk
 #3:查询用户的账户未使用的utxo,返回列表形式utxo
 #4:加入新用户
 #5:将打包的BLCOK_HEX传入数据库
 #6:存入交易
-#:将已使用的utxo的字段IF_USE改为1
+#7:存入被放进区块的utxo
+# :将已使用的utxo的字段IF_USE改为1
 
     DB = MySQLdb.connect(db_host, db_user, db_pass, 'chain')
     CURSOR = DB.cursor()
@@ -280,13 +281,13 @@ def db_operate(choice,username='NULL',key=[],block_hex='NULL',txs_hex='NULL'):
       	    index = row[0]
       	    txs = row[1]
         sql = "UPDATE TXS SET IF_PACK='1' WHERE id = '%s'" %(index)
-	CURSOR.execute(sql)
-	DB.commit()
+	    CURSOR.execute(sql)
+	    DB.commit()
         return txs
     elif choice == 2: #查询用户公私钥 如果没有成功返回0,0
         sql = "SELECT * FROM USER WHERE USERNAME='%s'" % username	
-	CURSOR.execute(sql)
-	results = CURSOR.fetchall()
+	    CURSOR.execute(sql)
+	    results = CURSOR.fetchall()
         if len(results) == 0:
             return 0,0
     	for row in results:
@@ -296,8 +297,8 @@ def db_operate(choice,username='NULL',key=[],block_hex='NULL',txs_hex='NULL'):
         return pk,sk
     elif choice == 3: #查询用户的账户未使用的utxo,返回列表形式utxo
         sql = "SELECT * FROM UTXO WHERE OWNER='%s' AND IF_USE='0' " % username	
-	URSOR.execute(sql)
-	results = CURSOR.fetchall()
+	    URSOR.execute(sql)
+	    results = CURSOR.fetchall()
         utxos=[]
     	for row in results:
       	    utxo = row[1]
@@ -305,17 +306,20 @@ def db_operate(choice,username='NULL',key=[],block_hex='NULL',txs_hex='NULL'):
         return utxos
     elif choice == 4: #加入新用户
         sql = "INSERT INTO USER(USERNAME,USER_PK,USER_SK) VALUES ('%s','%s','%s')" % (username,key[0],key[1])
-	CURSOR.execute(sql)
-	DB.commit()
+	    CURSOR.execute(sql)
+	    DB.commit()
     elif choice == 5: #将打包的BLCOK_HEX传入数据库
         sql = "INSERT INTO BLOCK(BLOCK_HEX) VALUES ('%s')" % (block_hex)
         CURSOR.execute(sql)
         DB.commit()
-    elif choice == 6: #
+    elif choice == 6: #存入交易
         sql = "INSERT INTO TXS(TXS_HEX,IF_PACK) VALUES ('%s','%s')" % (txs_hex,'0')
         CURSOR.execute(sql)
         DB.commit()
-
+    elif choic ==7: #存入被放进区块的utxo
+        sql = "INSERT INTO UTXO(UTXO,OWNER,IF_USE) VALUES ('%s',%s,'%s')" % (utxo,user_pk,'0')
+        CURSOR.execute(sql)
+        DB.commit()
     DB.close()
 
 def mining(txs):
@@ -334,10 +338,6 @@ def mining(txs):
     print new_block.get_dict()
     BLOCK_HEX = new_block.get_raw().encode('hex')
     db_operate(choice=5,block_hex=BLOCK_HEX)
-    #sql = "INSERT INTO BLOCK(BLOCK_HEX) VALUES ('%s')" % (new_block.get_raw().encode('hex'))
-    #CURSOR.execute(sql)
-    #DB.commit()
 
-    #print new_block.get_raw().encode('hex')
     return new_block
 
