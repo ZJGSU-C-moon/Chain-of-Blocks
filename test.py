@@ -3,7 +3,6 @@ import sys
 import hashlib
 import time
 from utils import *
-import pymysql.cursors
 
 __author__ = 'assassinq'
 
@@ -77,21 +76,6 @@ def parse_block_test(data):
         print block.get_dict()
     except Exception as e:
         print '[!] Error => ', e
-
-def mysql_operate():
-    conn = pymysql.connect(host='localhost', user='root', password='r00t', db='qf', cursorclass=pymysql.cursors.DictCursor)
-    try:
-        with conn.cursor() as cursor:
-            sql = "INSERT INTO `test1` (`username`, `password`) VALUES (%s, %s)"
-            cursor.execute(sql, ('beale', 'very-secret'))
-        conn.commit()
-        with conn.cursor() as cursor:
-            sql = "SELECT `id`, `password` FROM `test1` WHERE `username`=%s"
-            cursor.execute(sql, ('beale'))
-            result = cursor.fetchone()
-            print result
-    finally:
-        conn.close()
 
 if __name__ == '__main__':
     print '===== GENERATE ====='
