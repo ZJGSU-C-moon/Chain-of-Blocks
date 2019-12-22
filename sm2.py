@@ -33,7 +33,6 @@ def get_random_str(strlen):
 
 
 def generate_random_private_key():
-
     private_key = bitcoin.random_key()
     return private_key
 
@@ -43,7 +42,6 @@ def kG(k, Point):  # kP运算
     mask_str = '8'
     for i in range(len_para-1):
         mask_str += '0'
-    # print(mask_str)
     mask = int(mask_str, 16)
     Temp = Point
     flag = False
@@ -187,9 +185,9 @@ def bitcoin_address_from_public_key(public_key):  # 参数为str类型
 
 def keygen():
     #len_para = int(Fp / 4)
-    # print len_para
-    Pa = kG(int(d, 16), sm2_G)  # 生成公钥
+    #print len_para
     d = generate_random_private_key()
+    Pa = kG(int(d, 16), sm2_G)  # 生成公钥
     pk, sk = Pa, d
     return pk, sk
 

@@ -4,6 +4,8 @@ import MySQLdb
 from config import *
 from utils import *
 from sm2 import *
+import random
+import string
 
 db = MySQLdb.connect(host=db_host, user=db_user,
                      passwd=db_pass, charset='utf8')
@@ -33,17 +35,23 @@ sql = "CREATE TABLE BLOCK(id INT PRIMARY KEY AUTO_INCREMENT,BLOCK_HEX TEXT(1000)
 cursor.execute(sql)
 db.commit()
 
-
-sql = "CREATE TABLE USER(USERNAME CHAR(30), USER_PK TEXT(800),USER_SK TEXT(800));"
+sql = "CREATE TABLE USER(USERNAME CHAR(30), PASSWORD CHAR(100), USER_PK TEXT(800),USER_SK TEXT(800));"
 cursor.execute(sql)
 db.commit()
 
-print 'Hello! Here is your key pair!'
+print 'Hello admin! Here is your key pair!'
 pk, sk = keygen()
 print '[*] pk =', pk
 print '[*] sk =', sk
-print 'Now start creating genesis block!'
 
+print 'Shh! Here is your password!'
+passwd = ''
+for i in range(8):
+    passwd += string.printable[random.randint(0, 93)]
+print '[!] passwd =', passwd
+db_operate(4, 'admin', sm3(passwd), [pk, sk])
+
+print 'Now start creating genesis block!'
 tx_inputs = []
 info = 'this is a small blockchain system based on sm.'
 tx_input1 = tx_input('0' * 64, 0, len(info), info.encode('hex'))

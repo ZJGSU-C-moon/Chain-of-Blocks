@@ -3,6 +3,7 @@
 import random
 from sm2 import *
 from utils import *
+import getpass
 
 
 def generate_utxo(pk, value):
@@ -30,36 +31,51 @@ def login():
     print 'login or register new account:'
     print '1.login'
     print '2.register'
+    print '3.exit'
     choice = raw_input('choose:')
     if choice == '1':
-        username = raw_input('please input your name:')
-        flag = 1
-        pk, sk = db_operate(2, username)
-        if pk == 0 and sk == 0:
-            print "No users!"
+        username = raw_input('Username:')
+        result = db_operate(2, username)
+        if result == True:
+            print "The name does not exist!"
+            return False
+        password = getpass.getpass()
+        if sm3(password) != result[0]:
+            print 'Wrong password!'
             return False
         else:
             return True
     elif choice == '2':
-	    username = raw_input('please input your name:')
-	    print username
-	    result = db_operate(2, username)
-	    if result[0] == 0 and result[1] == 0:
-            pk, sk = keygen()
-            db_operate(4, username, [pk, sk])
-	        print 'register successfully!\nyour pk:%s \nyour sk:%s' % (pk, sk)
-            return True
-        else:
+        username = raw_input('Username:')
+        result = db_operate(2, username)
+        if result != True:
             print "The name has been registered!"
             return False
+        password = getpass.getpass()
+        pk, sk = keygen()
+        db_operate(4, username, sm3(password), [pk, sk])
+        print 'register successfully!\nyour pk:%s \nyour sk:%s' % (pk, sk)
+        return True
+    elif choice == '3':
+        exit()
+    else:
+        print 'Wrong option!'
+        return False
+
+
+def x():
+    txs = []
+    tx1 = create_tx('123', '456')
+    txs.append(tx1)
+    new_block = mining(txs)
+    exit()
 
 
 if __name__ == '__main__':
     while True:
         if login():
             break
-    txs = []
-    tx1 = create_tx('123', '456')
-    txs.append(tx1)
-    new_block = mining(txs)
+    raw_input('@')
+    while True:
+        x()
 

@@ -281,7 +281,7 @@ def proof_of_work(header, difficulty_bits):
         nonce += 1
 
 
-def db_operate(choice, username=None, key=[], block_hex=None, txs_hex=None, utxo=None, user_pk=None):
+def db_operate(choice, username=None, password=None, key=[], block_hex=None, txs_hex=None, utxo=None, user_pk=None):
     # 1:传出一个时间最久但未被打包使用的交易并将其IF_PACK设置为0
     # 2:查询用户公私钥 如果没有成功返回0,0 否则 pk,sk
     # 3:查询用户的账户未使用的utxo,返回列表形式utxo
@@ -306,18 +306,19 @@ def db_operate(choice, username=None, key=[], block_hex=None, txs_hex=None, utxo
         DB.commit()
         return txs
     elif choice == 2:  # 查询用户公私钥 如果没有成功返回0,0
-        sql = "SELECT * FROM USER WHERE USERNAME='%s'" % username
+        sql = "SELECT * FROM USER WHERE USERNAME='%s'" % (username)
         CURSOR.execute(sql)
         results = CURSOR.fetchall()
         if len(results) == 0:
-            return 0, 0
+            return True
         for row in results:
             username = row[0]
-            pk = row[1]
-            sk = row[2]
-        return pk, sk
+            password = row[1]
+            pk = row[2]
+            sk = row[3]
+        return password, pk, sk
     elif choice == 3:  # 查询用户的账户未使用的utxo,返回列表形式utxo
-        sql = "SELECT * FROM UTXO WHERE OWNER='%s' AND IF_USE='0' " % username
+        sql = "SELECT * FROM UTXO WHERE OWNER='%s' AND IF_USE='0' " % (username)
         URSOR.execute(sql)
         results = CURSOR.fetchall()
         utxos = []
@@ -326,8 +327,7 @@ def db_operate(choice, username=None, key=[], block_hex=None, txs_hex=None, utxo
             utxos.append(utxo)
         return utxos
     elif choice == 4:  # 加入新用户
-        sql = "INSERT INTO USER(USERNAME,USER_PK,USER_SK) VALUES ('%s','%s','%s')" % (
-            username, key[0], key[1])
+        sql = "INSERT INTO USER(USERNAME,PASSWORD,USER_PK,USER_SK) VALUES ('%s','%s','%s','%s')" % (username, password, key[0], key[1])
         CURSOR.execute(sql)
         DB.commit()
     elif choice == 5:  # 将打包的BLCOK_HEX传入数据库
@@ -335,16 +335,24 @@ def db_operate(choice, username=None, key=[], block_hex=None, txs_hex=None, utxo
         CURSOR.execute(sql)
         DB.commit()
     elif choice == 6:  # 存入交易
-        sql = "INSERT INTO TXS(TXS_HEX,IF_PACK) VALUES ('%s','%s')" % (
-            txs_hex, '0')
+        sql = "INSERT INTO TXS(TXS_HEX,IF_PACK) VALUES ('%s','%s')" % (txs_hex, '0')
         CURSOR.execute(sql)
         DB.commit()
-    elif choic == 7:  # 存入被放进区块的utxo
-        sql = "INSERT INTO UTXO(UTXO,OWNER,IF_USE) VALUES ('%s',%s,'%s')" % (
-            utxo, user_pk, '0')
+    elif choice == 7:  # 存入被放进区块的utxo
+        sql = "INSERT INTO UTXO(UTXO,OWNER,IF_USE) VALUES ('%s','%s','%s')" % (utxo, user_pk, '0')
         CURSOR.execute(sql)
         DB.commit()
     DB.close()
+
+
+def get_utxo(block):
+    res = {}
+    for i in range(len(block.txs)):
+        for j in range(len(block.txs[i].tx_outputs)):
+            utxo = block.txs[i].tx_outputs[j]
+            pk = utxo.scriptPubKey
+            res[pk] = utxo.get_raw().encode('hex')
+    return res
 
 
 def mining(txs):
@@ -353,7 +361,7 @@ def mining(txs):
     tx_hashes = cal_tx_hashes(txs)
     merkle_root = cal_merkle_root(tx_hashes)
     timestamp = int(time.time())
-    nbits = 11
+    nbits = 10
     header = cal_header(version, prev_hash, merkle_root, timestamp, nbits)
     (hash_result, nonce) = proof_of_work(header, nbits)
     block_size = 96
@@ -364,5 +372,8 @@ def mining(txs):
     print new_block.get_dict()
     BLOCK_HEX = new_block.get_raw().encode('hex')
     db_operate(choice=5, block_hex=BLOCK_HEX)
-
+    res = get_utxo(new_block)
+    for pk, utxo in res.items():
+        db_operate(choice=7, utxo=utxo, user_pk=pk)
     return new_block
+
