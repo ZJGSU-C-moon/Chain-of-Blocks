@@ -5,10 +5,8 @@ from sm2 import *
 from utils import *
 import getpass
 
+
 info = {}
-username = ''
-pk = ''
-sk = ''
 
 
 def login():
@@ -29,6 +27,9 @@ def login():
             print 'Wrong password!'
             return False
         else:
+            info['username'] = username
+            info['pk'] = result[1]
+            info['sk'] = result[2]
             return True
     elif choice == '2':
         username = raw_input('Username:')
@@ -40,6 +41,9 @@ def login():
         pk, sk = keygen()
         db_operate(4, username, sm3(password), [pk, sk])
         print 'register successfully!\nyour pk:%s \nyour sk:%s' % (pk, sk)
+        info['username'] = username
+        info['pk'] = pk
+        info['sk'] = sk
         return True
     elif choice == '3':
         exit()
@@ -56,21 +60,21 @@ def wallet():
     print '3.exit'
     choice = raw_input('choose:')
     if choice == '1':
-        src_username = raw_input('Please input your name:')
         dst_usernames = raw_input('Please input the other name(Multiple,separated by spaces):').split()
-        value = raw_input('Please input the tx fee:')
-        src_pk = db_operate(8,src_username)
+        value = int(raw_input('Please input the transfer value:'))
+        src_pk = info['pk']
         dst_pks = []
         for dst_username in dst_usernames:
             dst_pk=db_operate(8,dst_username)
             dst_pks.append(dst_pk)
         tx = create_tx(src_pk, dst_pks, value)
-        #db_operate()
         return True
     elif choice == '2':
-        #txs = db_operate()
-        new_block = mining(txs, pk)
-        return True:
+        txs = []
+        tx1 = db_operate(1)
+        txs.append(parse_tx(tx1.decode('hex')).get_tx())
+        new_block = mining(txs, info['pk'])
+        return True
     elif choice == '3':
         exit()
     else:
@@ -81,6 +85,7 @@ if __name__ == '__main__':
     while True:
         if login():
             break
+    print info
     while True:
         wallet()
 

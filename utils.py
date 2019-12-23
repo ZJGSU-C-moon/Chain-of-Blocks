@@ -374,9 +374,10 @@ def create_tx(src_pk, dst_pks, value=0, info='', is_coinbase=False):
     else:
         tx_input1 = tx_input('0' * 64, 0, 3, '123456')  # utxo
         tx_inputs.append(tx_input1)
+    print tx_input1.get_dict()
     tx_outputs = []
     if is_coinbase:
-        tx_output1 = tx_output(50, 128, dst_pks)  # transfer
+        tx_output1 = tx_output(50, 128, dst_pks[0])  # transfer
         tx_outputs.append(tx_output1)
     else:
         for dst_pk in dst_pks:
@@ -386,8 +387,8 @@ def create_tx(src_pk, dst_pks, value=0, info='', is_coinbase=False):
             #tx_outputs.append(tx_output2)
             #tx_output3 = tx_output(utxo - value, 64, src_pk.decode('hex'))  # charge
             #tx_outputs.append(tx_output3)
+    print tx_output1.get_dict()
     new_tx = tx(len(tx_inputs), tx_inputs, len(tx_outputs), tx_outputs)
-    print new_tx.get_dict()
     txs = new_tx.get_raw().encode('hex')
     db_operate(choice=6, txs_hex=txs)
     return new_tx
@@ -396,7 +397,7 @@ def create_tx(src_pk, dst_pks, value=0, info='', is_coinbase=False):
 def mining(txs, miner_pk, info=''):
     version = 1
     prev_hash = '0' * 64
-    coinbase = create_tx(src_pk='0'*64, dst_pk=miner_pk, info=info, is_coinbase=True)
+    coinbase = create_tx(src_pk='0'*64, dst_pks=[miner_pk], info=info, is_coinbase=True)
     txs.append(coinbase)
     tx_hashes = cal_tx_hashes(txs)
     merkle_root = cal_merkle_root(tx_hashes)

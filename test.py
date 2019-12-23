@@ -83,8 +83,9 @@ def parse_block_test(data):
 
 
 if __name__ == '__main__':
-    print '===== GENERATE ====='
-    data = pack()
-    print '===== PARSE ====='
-    # parse_tx_test()
-    parse_block_test(data)
+    #print '===== GENERATE ====='
+    #data = pack()
+    #print '===== PARSE ====='
+    data = raw_input()
+    parse_tx_test(data)
+    #parse_block_test(data)
