@@ -6,6 +6,7 @@ from utils import *
 from sm2 import *
 import random
 import string
+from client import *
 
 db = MySQLdb.connect(host=db_host, user=db_user,
                      passwd=db_pass, charset='utf8')
@@ -56,3 +57,6 @@ info = 'this is a small blockchain system based on sm.'
 init_block = mining([], pk, info)
 
 db.close()
+
+while True:
+    wallet()
