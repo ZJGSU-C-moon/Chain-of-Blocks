@@ -44,6 +44,9 @@ print 'Hello admin! Here is your key pair!'
 pk, sk = keygen()
 print '[*] pk =', pk
 print '[*] sk =', sk
+info['username'] = 'admin'
+info['pk'] = pk
+info['sk'] = sk
 
 print 'Shh! Here is your password!'
 passwd = ''
