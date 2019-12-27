@@ -281,15 +281,16 @@ def proof_of_work(header, difficulty_bits):
         nonce += 1
 
 
-def db_operate(choice, username=None, password=None, key=[], block_hex=None, txs_hex=None, utxo=None, user_pk=None):
+def db_operate(choice, username=None, password=None, key=[], block_hex=None, block_header_hash=None,txs_hex=None, user_pk=None, value=None, utxo=None):
     # 1:传出一个时间最久但未被打包使用的交易并将其IF_PACK设置为0
     # 2:查询用户公私钥 如果没有成功返回0,0 否则 pk,sk
     # 3:查询用户的账户未使用的utxo,返回列表形式utxo
     # 4:加入新用户
-    # 5:将打包的BLCOK_HEX传入数据库
+    # 5:将打包的BLCOK_HEX、BLOCK_HEADER传入数据库
     # 6:存入交易
     # 7:存入被放进区块的utxo
     # 8:查找用户公钥
+    # 9:提供前一个区块头
     # :将已使用的utxo的字段IF_USE改为1
 
     DB = MySQLdb.connect(db_host, db_user, db_pass, 'chain')
@@ -319,28 +320,28 @@ def db_operate(choice, username=None, password=None, key=[], block_hex=None, txs
             sk = row[3]
         return password, pk, sk
     elif choice == 3:  # 查询用户的账户未使用的utxo,返回列表形式utxo
-        sql = "SELECT * FROM UTXO WHERE OWNER='%s' AND IF_USE='0' " % (username)
-        URSOR.execute(sql)
+        sql = "SELECT * FROM UTXO WHERE OWNER='%s' AND IF_USE='0' ORDER BY VALUE" % (username)
+        CURSOR.execute(sql)
         results = CURSOR.fetchall()
-        utxos = []
+        utxos = {}
         for row in results:
             utxo = row[1]
-            utxos.append(utxo)
+            utxos[utxo] = row[3]
         return utxos
     elif choice == 4:  # 加入新用户
         sql = "INSERT INTO USER(USERNAME,PASSWORD,USER_PK,USER_SK) VALUES ('%s','%s','%s','%s')" % (username, password, key[0], key[1])
         CURSOR.execute(sql)
         DB.commit()
-    elif choice == 5:  # 将打包的BLCOK_HEX传入数据库
-        sql = "INSERT INTO BLOCK(BLOCK_HEX) VALUES ('%s')" % (block_hex)
+    elif choice == 5:  # 将打包的BLCOK_HEX、BLOCK_HEADER传入数据库
+        sql = "INSERT INTO BLOCK(BLOCK_HEX,BLOCK_HEADER_HASH) VALUES ('%s','%s')" % (block_hex,block_header_hash)
         CURSOR.execute(sql)
         DB.commit()
     elif choice == 6:  # 存入交易
-        sql = "INSERT INTO TXS(TXS_HEX,IF_PACK) VALUES ('%s','%s')" % (txs_hex, '0')
+        sql = "INSERT INTO TXS(TXS_HEX,IF_PACK) VALUES ('%s','%s')" % (txs_hex,'0')
         CURSOR.execute(sql)
         DB.commit()
     elif choice == 7:  # 存入被放进区块的utxo
-        sql = "INSERT INTO UTXO(UTXO,OWNER,IF_USE) VALUES ('%s','%s','%s')" % (utxo, user_pk, '0')
+        sql = "INSERT INTO UTXO(UTXO,OWNER,VALUE,IF_USE) VALUES ('%s','%s','%f','%s')" % (utxo, user_pk, value,'0')
         CURSOR.execute(sql)
         DB.commit()
     elif choice == 8:  # 查找用户公钥
@@ -353,17 +354,32 @@ def db_operate(choice, username=None, password=None, key=[], block_hex=None, txs
             username = row[0]
             pk = row[2]
         return pk
+    elif choice == 9:  #提供前一个区块头
+        sql = "SELECT *  FROM BLOCK ORDER BY ID DESC LIMIT 1"
+        CURSOR.execute(sql)
+        results = CURSOR.fetchall()
+        headerhash='0' * 64
+        for row in results:
+            headerhash = row[2]
+        return headerhash
+    elif choice == 10: #将已经使用的utxo置1	
+        sql = "UPDATE UTXO  SET IF_USE='1' WHERE UTXO='%s'" % (utxo)
+        CURSOR.execute(sql)
+        DB.commit()
     DB.close()
 
 
 def get_utxo(block):
-    res = {}
+    res_all = []
     for i in range(len(block.txs)):
         for j in range(len(block.txs[i].tx_outputs)):
+            res = {}
             utxo = block.txs[i].tx_outputs[j]
-            pk = utxo.scriptPubKey
-            res[pk] = utxo.get_raw().encode('hex')
-    return res
+            res['pk'] = utxo.scriptPubKey
+            res['utxo'] = utxo.get_raw().encode('hex')
+            res['value'] = utxo.value
+            res_all.append(res)
+    return res_all
 
 
 def create_tx(src_pk, dst_pks, value=0, info='', is_coinbase=False):
@@ -396,7 +412,7 @@ def create_tx(src_pk, dst_pks, value=0, info='', is_coinbase=False):
 
 def mining(txs, miner_pk, info=''):
     version = 1
-    prev_hash = '0' * 64
+    prev_hash = db_operate(9)
     coinbase = create_tx(src_pk='0'*64, dst_pks=[miner_pk], info=info, is_coinbase=True)
     txs.append(coinbase)
     tx_hashes = cal_tx_hashes(txs)
@@ -412,9 +428,12 @@ def mining(txs, miner_pk, info=''):
                       merkle_root, timestamp, nbits, nonce, len(txs), txs)
     print new_block.get_dict()
     BLOCK_HEX = new_block.get_raw().encode('hex')
-    db_operate(choice=5, block_hex=BLOCK_HEX)
-    res = get_utxo(new_block)
-    for pk, utxo in res.items():
-        db_operate(choice=7, utxo=utxo, user_pk=pk)
+    BLOCK_HEADER_HASH = new_block.header_hash
+    db_operate(choice=5, block_hex=BLOCK_HEX,block_header_hash=BLOCK_HEADER_HASH)
+    res_all = []
+    res_all = get_utxo(new_block)
+    for res in res_all:
+        db_operate(choice=7, utxo=res['utxo'], user_pk=res['pk'], value=res['value'])
+	raw_input('@')
     return new_block
 
