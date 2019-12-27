@@ -245,9 +245,12 @@ def verify(sig, E, PA):  # 验签函数，sign签名r||s，E消息的hash，PA�
 
 if __name__ == '__main__':
     pk, sk = keygen()
+    print type(pk)
     print pk
+    print type(sk)
     print sk
     h = sm3('C-moon')
     sig = sign(h, sk)
+    print sig
     res = verify(sig, h, pk)
     print res

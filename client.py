@@ -53,21 +53,27 @@ def login():
 
 
 def wallet():
+    balance = get_balance(info['username'])
     print '=== Wallet interface ==='
+    print '=== Your balance:', balance, '==='
     print 'choose an option:'
     print '1.create a tx'
     print '2.start mining'
     print '3.exit'
     choice = raw_input('choose:')
     if choice == '1':
-        dst_usernames = raw_input('Please input the other name(Multiple,separated by spaces):').split()
+        dst_username = raw_input('Please input the other name:')
+        result = db_operate(2, dst_username)
+        if result == True:
+            print '[!] User does not exist...'
+            return False
         value = int(raw_input('Please input the transfer value:'))
+        if value > balance:
+            print '[!] You do not have this money...'
+            return False
         src_pk = info['pk']
-        dst_pks = []
-        for dst_username in dst_usernames:
-            dst_pk=db_operate(8,dst_username)
-            dst_pks.append(dst_pk)
-        tx = create_tx(src_pk, dst_pks, value)
+        dst_pk = db_operate(8, dst_username)
+        tx = create_tx(src_pk=src_pk, dst_pk=dst_pk, value=value, src_sk=info['sk'])
         return True
     elif choice == '2':
         txs = []
