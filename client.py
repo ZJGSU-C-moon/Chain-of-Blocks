@@ -93,7 +93,6 @@ if __name__ == '__main__':
     while True:
         if login():
             break
-    print info
     while True:
         wallet()
 

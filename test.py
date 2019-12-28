@@ -68,6 +68,7 @@ def parse_tx_test(data):
         tx_parsed = parse_tx(data)
         tx = tx_parsed.get_tx()
         print tx.get_dict()
+        return tx
     except Exception as e:
         print '[!] Error => ', e
 
@@ -78,6 +79,7 @@ def parse_block_test(data):
         block_parsed = parse_block(data)
         block = block_parsed.get_block()
         print block.get_dict()
+        return block
     except Exception as e:
         print '[!] Error => ', e
 

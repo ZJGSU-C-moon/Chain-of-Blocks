@@ -14,18 +14,27 @@ def hash256(m): return sm3(sm3(m)).decode('hex')[::-1].encode('hex')
 
 
 class tx_input:
-    def __init__(self, tx_id, idx, lengthOfScriptSig, scriptSig):
+    def __init__(self, tx_id, idx, lengthOfScriptSig, scriptSig, is_coinbase=False):
         self.tx_id = tx_id
         self.idx = idx
-        self.lengthOfScriptSig = lengthOfScriptSig
-        self.scriptSig = scriptSig
+        self.is_coinbase = is_coinbase
+        if self.is_coinbase == True:
+            self.coinbase_size = lengthOfScriptSig
+            self.coinbase = scriptSig
+        else:
+            self.lengthOfScriptSig = lengthOfScriptSig
+            self.scriptSig = scriptSig
 
     def get_raw(self):
         raw = ''
         raw += self.tx_id.decode('hex')[::-1]
         raw += hex(self.idx)[2:].zfill(8).decode('hex')[::-1]
-        raw += hex(self.lengthOfScriptSig)[2:].zfill(16).decode('hex')[::-1]
-        raw += self.scriptSig.decode('hex')[::-1]
+        if self.is_coinbase == True:
+            raw += hex(self.coinbase_size)[2:].zfill(16).decode('hex')[::-1]
+            raw += self.coinbase.decode('hex')[::-1]
+        else:
+            raw += hex(self.lengthOfScriptSig)[2:].zfill(16).decode('hex')[::-1]
+            raw += self.scriptSig.decode('hex')[::-1]
         return raw
 
     def get_dict(self):
@@ -161,7 +170,7 @@ class parse_tx_input:
 
     def get_tx_input(self):
         if self.prev_tx_hash == '0' * 64:
-            return tx_input(self.prev_tx_hash, self.prev_tx_idx, self.coinbase_size, self.coinbase)
+            return tx_input(self.prev_tx_hash, self.prev_tx_idx, self.coinbase_size, self.coinbase, is_coinbase=True)
         else:
             return tx_input(self.prev_tx_hash, self.prev_tx_idx, self.script_size, self.script)
 
@@ -273,7 +282,7 @@ def proof_of_work(header, difficulty_bits):
     nonce = 0
 
     while True:
-        hash_result = hash256(header + str(nonce))
+        hash_result = hash256(header + hex(nonce)[2:].zfill(8).decode('hex')[::-1])
         # check if this is a valid result, below the target
         if long(hash_result, 16) < target:
             print "Success with nonce %d" % nonce
@@ -293,6 +302,8 @@ def db_operate(choice, username=None, password=None, key=[], block_hex=None, blo
     # 8:查找用户公钥
     # 9:提供前一个区块头
     # :将已使用的utxo的字段IF_USE改为1
+    # 11:返回utxo中的tx_hash和idx字段
+    # 12:返回指定tx_hash对应的tx
 
     DB = MySQLdb.connect(db_host, db_user, db_pass, 'chain')
     CURSOR = DB.cursor()
@@ -327,7 +338,7 @@ def db_operate(choice, username=None, password=None, key=[], block_hex=None, blo
         utxos = {}
         for row in results:
             utxo = row[1]
-            utxos[utxo] = row[3]
+            utxos[utxo] = row[5]
         return utxos
     elif choice == 4:  # 加入新用户
         sql = "INSERT INTO USER(USERNAME,PASSWORD,USER_PK,USER_SK) VALUES ('%s','%s','%s','%s')" % (username, password, key[0], key[1])
@@ -339,9 +350,9 @@ def db_operate(choice, username=None, password=None, key=[], block_hex=None, blo
         DB.commit()
     elif choice == 6:  # 存入交易
         if is_coinbase == False:
-            sql = "INSERT INTO TXS(TX_HEX,IF_PACK) VALUES ('%s','%s')" % (tx_hex,'0')
+            sql = "INSERT INTO TXS(TX_HEX, IF_PACK, TX_HASH) VALUES ('%s','%s','%s')" % (tx_hex, '0', tx_hash)
         else:
-            sql = "INSERT INTO TXS(TX_HEX,IF_PACK) VALUES ('%s','%s')" % (tx_hex,'1')
+            sql = "INSERT INTO TXS(TX_HEX, IF_PACK, TX_HASH) VALUES ('%s','%s','%s')" % (tx_hex, '1', tx_hash)
         CURSOR.execute(sql)
         DB.commit()
     elif choice == 7:  # 存入被放进区块的utxo
@@ -362,14 +373,24 @@ def db_operate(choice, username=None, password=None, key=[], block_hex=None, blo
         sql = "SELECT * FROM BLOCK ORDER BY ID DESC LIMIT 1"
         CURSOR.execute(sql)
         results = CURSOR.fetchall()
-        headerhash='0' * 64
+        header_hash = '0' * 64
         for row in results:
-            headerhash = row[2]
-        return headerhash
+            header_hash = row[2]
+        return header_hash
     elif choice == 10: #将已经使用的utxo置1	
         sql = "UPDATE UTXO SET IF_USE='1' WHERE UTXO='%s'" % (utxo)
         CURSOR.execute(sql)
         DB.commit()
+    elif choice == 11: #获取指定utxo对应的tx_id和索引
+        sql = "SELECT * FROM UTXO WHERE UTXO='%s'" % (utxo)
+        CURSOR.execute(sql)
+        result = CURSOR.fetchall()[0]
+        return result[2], result[3]
+    elif choice == 12:  #获取指定tx_hash的交易
+        sql = "SELECT * FROM TXS WHERE TX_HASH='%s'" % (tx_hash)
+        CURSOR.execute(sql)
+        result = CURSOR.fetchall()[0]
+        return result[1]
     DB.close()
 
 
@@ -380,7 +401,7 @@ def get_utxo(block):
         for j in range(len(block.txs[i].tx_outputs)):
             res = {}
             utxo = block.txs[i].tx_outputs[j]
-            res['tx_hash'] = sm3(block.txs[i].get_raw())
+            res['tx_hash'] = hash256(block.txs[i].get_raw())
             res['idx'] = idx
             res['pk'] = utxo.scriptPubKey
             res['utxo'] = utxo.get_raw().encode('hex')
@@ -403,11 +424,12 @@ def get_balance(username):
 def generate_utxo(pk, sk, value):
     utxos = db_operate(choice=3, user_pk=pk)
     total = 0
-    result = {}
+    result = []
     for utxo, val in utxos.items():
         signature = sign(sm3(utxo), sk)
-        prev_tx_hash = ''
-        result[prev_tx_hash] = signature
+        prev_tx_hash, idx = db_operate(choice=11, utxo=utxo)
+        result.append([prev_tx_hash, idx, signature])
+        db_operate(choice=10, utxo=utxo)
         total += int(val)
         if total >= value:
             return result, (total - value)
@@ -416,38 +438,48 @@ def generate_utxo(pk, sk, value):
 def create_tx(src_pk, dst_pk, value=0, info='', is_coinbase=False, src_sk=None):
     tx_inputs = []
     if is_coinbase:
-        tx_input1 = tx_input('0' * 64, 0, len(info), info[::-1].encode('hex'))  # utxo
+        tx_input1 = tx_input('0' * 64, 0, len(info), info[::-1].encode('hex'), is_coinbase=is_coinbase)  # utxo
         tx_inputs.append(tx_input1)
     else:
-        tx_input1 = tx_input('0' * 64, 0, 3, '123456')  # utxo
-        tx_inputs.append(tx_input1)
-        #inputs, charge = generate_utxo(src_pk, src_sk, value)
-        #for prev_tx_hash, signature in inputs.items():
-        #    single_tx_input = tx_input(prev_tx_hash, 0, len(signature), signature)  # utxo
-        #    print single_tx_input.get_dict()
-        #    tx_inputs.append(single_tx_input)
+        inputs, charge = generate_utxo(src_pk, src_sk, value)
+        #print inputs
+        for prev_tx_hash, idx, signature in inputs:
+            single_tx_input = tx_input(prev_tx_hash, int(idx), len(signature.decode('hex')), signature)  # utxo
+            #print single_tx_input.get_dict()
+            tx_inputs.append(single_tx_input)
     tx_outputs = []
     if is_coinbase:
-        tx_output1 = tx_output(50, 64, dst_pk)  # transfer
+        tx_output1 = tx_output(50, len(dst_pk.decode('hex')), dst_pk)  # transfer
         tx_outputs.append(tx_output1)
     else:
-        tx_output1 = tx_output(value, 64, dst_pk)  # transfer
+        tx_output1 = tx_output(value, len(dst_pk.decode('hex')), dst_pk)  # transfer
         tx_outputs.append(tx_output1)
         #tx_output2 = tx_output(value,64, miner_pk)  # fee
         #tx_outputs.append(tx_output2)
-        #if charge > 0:
-        #    tx_output3 = tx_output(charge, 64, src_pk)  # charge
-        #    tx_outputs.append(tx_output3)
+        if charge > 0:
+            tx_output3 = tx_output(charge, len(src_pk.decode('hex')), src_pk)  # charge
+            tx_outputs.append(tx_output3)
     #print tx_output1.get_dict()
     new_tx = tx(len(tx_inputs), tx_inputs, len(tx_outputs), tx_outputs)
-    txs = new_tx.get_raw().encode('hex')
-    db_operate(choice=6, tx_hex=txs, is_coinbase=is_coinbase)
+    tx_hex = new_tx.get_raw().encode('hex')
+    db_operate(choice=6, tx_hex=tx_hex, tx_hash=new_tx.self_hash, is_coinbase=is_coinbase)
     return new_tx
 
 
 def verify_txs(txs):
     for tx in txs:
-        pass
+        for tx_input in tx.tx_inputs:
+            if tx_input.is_coinbase == True:
+                continue
+            e = tx_input.tx_id
+            idx = tx_input.idx
+            signature = tx_input.scriptSig
+            prev_tx_hex = db_operate(choice=12, tx_hash=e)
+            prev_tx = parse_tx(prev_tx_hex.decode('hex')).get_tx()
+            pk = prev_tx.tx_outputs[idx].scriptPubKey
+            res = verify(signature, e, pk)
+            if res == False:
+                return False
     return True
 
 
