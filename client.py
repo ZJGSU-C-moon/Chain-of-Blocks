@@ -55,11 +55,11 @@ def login():
 def wallet():
     balance = get_balance(info['username'])
     print '=== Wallet interface ==='
-    print '=== Your balance:', balance, '==='
     print 'choose an option:'
     print '1.create a tx'
     print '2.start mining'
-    print '3.exit'
+    print '3.get balance'
+    print '4.exit'
     choice = raw_input('choose:')
     if choice == '1':
         dst_username = raw_input('Please input the other name:')
@@ -82,6 +82,8 @@ def wallet():
         new_block = mining(txs, info['pk'])
         return True
     elif choice == '3':
+        print '[*] Your balance:', balance
+    elif choice == '4':
         exit()
     else:
         return False
