@@ -282,7 +282,7 @@ def proof_of_work(header, difficulty_bits):
         nonce += 1
 
 
-def db_operate(choice, username=None, password=None, key=[], block_hex=None, block_header_hash=None,txs_hex=None, txs_hash=None, user_pk=None, value=None, utxo=None, is_coinbase=False, index=None):
+def db_operate(choice, username=None, password=None, key=[], block_hex=None, block_header_hash=None,tx_hex=None, tx_hash=None, user_pk=None, value=None, utxo=None, is_coinbase=False, idx=None):
     # 1:传出一个时间最久但未被打包使用的交易并将其IF_PACK设置为0
     # 2:查询用户公私钥 如果没有成功返回0,0 否则 pk,sk
     # 3:查询用户的账户未使用的utxo,返回列表形式utxo
@@ -302,9 +302,9 @@ def db_operate(choice, username=None, password=None, key=[], block_hex=None, blo
         CURSOR.execute(sql)
         results = CURSOR.fetchall()
         for row in results:
-            index = row[0]
+            idx = row[0]
             txs = row[1]
-        sql = "UPDATE TXS SET IF_PACK='1' WHERE id = '%s'" % (index)
+        sql = "UPDATE TXS SET IF_PACK='1' WHERE id = '%s'" % (idx)
         CURSOR.execute(sql)
         DB.commit()
         return txs
@@ -339,13 +339,13 @@ def db_operate(choice, username=None, password=None, key=[], block_hex=None, blo
         DB.commit()
     elif choice == 6:  # 存入交易
         if is_coinbase == False:
-            sql = "INSERT INTO TXS(TXS_HEX,IF_PACK) VALUES ('%s','%s')" % (txs_hex,'0')
+            sql = "INSERT INTO TXS(TX_HEX,IF_PACK) VALUES ('%s','%s')" % (tx_hex,'0')
         else:
-            sql = "INSERT INTO TXS(TXS_HEX,IF_PACK) VALUES ('%s','%s')" % (txs_hex,'1')
+            sql = "INSERT INTO TXS(TX_HEX,IF_PACK) VALUES ('%s','%s')" % (tx_hex,'1')
         CURSOR.execute(sql)
         DB.commit()
     elif choice == 7:  # 存入被放进区块的utxo
-        sql = "INSERT INTO UTXO(UTXO,OWNER,VALUE,IF_USE) VALUES ('%s','%s','%d','%s','%d','%s')" % (utxo,txs_hash,index, user_pk, value,'0')
+        sql = "INSERT INTO UTXO(UTXO, TX_HASH, IDX, OWNER, VALUE, IF_USE) VALUES ('%s','%s','%d','%s','%d','%s')" % (utxo, tx_hash, idx, user_pk, value, '0')
         CURSOR.execute(sql)
         DB.commit()
     elif choice == 8:  # 查找用户公钥
@@ -376,13 +376,17 @@ def db_operate(choice, username=None, password=None, key=[], block_hex=None, blo
 def get_utxo(block):
     res_all = []
     for i in range(len(block.txs)):
+        idx = 0
         for j in range(len(block.txs[i].tx_outputs)):
             res = {}
             utxo = block.txs[i].tx_outputs[j]
+            res['tx_hash'] = sm3(block.txs[i].get_raw())
+            res['idx'] = idx
             res['pk'] = utxo.scriptPubKey
             res['utxo'] = utxo.get_raw().encode('hex')
             res['value'] = utxo.value
             res_all.append(res)
+            idx += 1
     return res_all
 
 
@@ -431,12 +435,13 @@ def create_tx(src_pk, dst_pk, value=0, info='', is_coinbase=False, src_sk=None):
         tx_outputs.append(tx_output1)
         #tx_output2 = tx_output(value,64, miner_pk)  # fee
         #tx_outputs.append(tx_output2)
-        #tx_output3 = tx_output(charge, 64, src_pk)  # charge
-        #tx_outputs.append(tx_output3)
+        #if charge > 0:
+        #    tx_output3 = tx_output(charge, 64, src_pk)  # charge
+        #    tx_outputs.append(tx_output3)
     #print tx_output1.get_dict()
     new_tx = tx(len(tx_inputs), tx_inputs, len(tx_outputs), tx_outputs)
     txs = new_tx.get_raw().encode('hex')
-    db_operate(choice=6, txs_hex=txs, is_coinbase=is_coinbase)
+    db_operate(choice=6, tx_hex=txs, is_coinbase=is_coinbase)
     return new_tx
 
 
@@ -471,9 +476,7 @@ def mining(txs, miner_pk, info=''):
     db_operate(choice=5, block_hex=BLOCK_HEX,block_header_hash=BLOCK_HEADER_HASH)
     res_all = []
     res_all = get_utxo(new_block)
-    idx = 0
     for res in res_all:
-        db_operate(choice=7, utxo=res['utxo'], user_pk=res['pk'], value=res['value'])
-        idx += 1
+        db_operate(choice=7, tx_hash=res['tx_hash'], idx=res['idx'], utxo=res['utxo'], user_pk=res['pk'], value=res['value'])
     return new_block
 
