@@ -238,6 +238,29 @@ class parse_block:
         return block(self.block_size, self.version, self.prev_hash, self.merkle_root, self.timestamp, self.nbits, self.nonce, self.sum_tx, self.txs)
 
 
+
+def parse_tx_test(data):
+    try:
+        data = data.decode('hex')
+        tx_parsed = parse_tx(data)
+        tx = tx_parsed.get_tx()
+        print tx.get_dict()
+        return tx
+    except Exception as e:
+        print '[!] Error => ', e
+
+
+def parse_block_test(data):
+    try:
+        data = data.decode('hex')
+        block_parsed = parse_block(data)
+        block = block_parsed.get_block()
+        print block.get_dict()
+        return block
+    except Exception as e:
+        print '[!] Error => ', e
+
+
 def cal_tx_hashes(txs):
     tx_hashes = []
     for tx in txs:
