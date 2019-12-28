@@ -471,7 +471,9 @@ def mining(txs, miner_pk, info=''):
     db_operate(choice=5, block_hex=BLOCK_HEX,block_header_hash=BLOCK_HEADER_HASH)
     res_all = []
     res_all = get_utxo(new_block)
+    idx = 0
     for res in res_all:
         db_operate(choice=7, utxo=res['utxo'], user_pk=res['pk'], value=res['value'])
+        idx += 1
     return new_block
 
