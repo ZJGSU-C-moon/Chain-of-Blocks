@@ -10,7 +10,8 @@ import MySQLdb
 from config import *
 
 
-def hash256(m): return sm3(sm3(m)).decode('hex')[::-1].encode('hex')
+hash256 = lambda m: sm3(sm3(m)).decode('hex')[::-1].encode('hex')
+hash160 = lambda m: hashlib.new('ripemd160', m.decode('hex')).hexdigest()
 
 
 class tx_input:
@@ -301,7 +302,7 @@ def db_operate(choice, username=None, password=None, key=[], block_hex=None, blo
     # 7:存入被放进区块的utxo
     # 8:查找用户公钥
     # 9:提供前一个区块头
-    # :将已使用的utxo的字段IF_USE改为1
+    # 10:将已使用的utxo的字段IF_USE改为1
     # 11:返回utxo中的tx_hash和idx字段
     # 12:返回指定tx_hash对应的tx
 
@@ -467,7 +468,7 @@ def create_tx(src_pk, dst_pk, value=0, info='', is_coinbase=False, src_sk=None):
     return new_tx
 
 
-def verify_txs(txs):
+def verify_txs_p2pk(txs):
     for tx in txs:
         for tx_input in tx.tx_inputs:
             if tx_input.is_coinbase == True:
@@ -478,7 +479,28 @@ def verify_txs(txs):
             prev_tx_hex = db_operate(choice=12, tx_hash=e)
             prev_tx = parse_tx(prev_tx_hex.decode('hex')).get_tx()
             pk = prev_tx.tx_outputs[idx].scriptPubKey
-            print signature, e, pk
+            #print signature, e, pk
+            res = verify(signature, e, pk)
+            if res == False:
+                return False
+    return True
+
+
+def verify_txs_p2pkh(txs):
+    for tx in txs:
+        for tx_input in tx.tx_inputs:
+            if tx_input.is_coinbase == True:
+                continue
+            e = tx_input.tx_id
+            idx = tx_input.idx
+            script = tx_input.scriptSig
+            signature = script[:128]
+            pk = script[128:]
+            prev_tx_hex = db_operate(choice=12, tx_hash=e)
+            prev_tx = parse_tx(prev_tx_hex.decode('hex')).get_tx()
+            pk_hash = prev_tx.tx_outputs[idx].scriptPubKey
+            if pk_hash != hash160(pk):
+                return False
             res = verify(signature, e, pk)
             if res == False:
                 return False
@@ -490,7 +512,7 @@ def mining(txs, miner_pk, info=''):
     prev_hash = db_operate(choice=9)
     coinbase = create_tx(src_pk='0'*64, dst_pk=miner_pk, info=info, is_coinbase=True)
     txs.append(coinbase)
-    if verify_txs(txs) == False:
+    if verify_txs_p2pk(txs) == False:
         print '[!] Transactions invalid...'
         return False
     tx_hashes = cal_tx_hashes(txs)
