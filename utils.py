@@ -282,7 +282,7 @@ def proof_of_work(header, difficulty_bits):
         nonce += 1
 
 
-def db_operate(choice, username=None, password=None, key=[], block_hex=None, block_header_hash=None,txs_hex=None, user_pk=None, value=None, utxo=None, is_coinbase=False):
+def db_operate(choice, username=None, password=None, key=[], block_hex=None, block_header_hash=None,txs_hex=None, txs_hash=None, user_pk=None, value=None, utxo=None, is_coinbase=False, index=None):
     # 1:传出一个时间最久但未被打包使用的交易并将其IF_PACK设置为0
     # 2:查询用户公私钥 如果没有成功返回0,0 否则 pk,sk
     # 3:查询用户的账户未使用的utxo,返回列表形式utxo
@@ -345,7 +345,7 @@ def db_operate(choice, username=None, password=None, key=[], block_hex=None, blo
         CURSOR.execute(sql)
         DB.commit()
     elif choice == 7:  # 存入被放进区块的utxo
-        sql = "INSERT INTO UTXO(UTXO,OWNER,VALUE,IF_USE) VALUES ('%s','%s','%d','%s')" % (utxo, user_pk, value,'0')
+        sql = "INSERT INTO UTXO(UTXO,OWNER,VALUE,IF_USE) VALUES ('%s','%s','%d','%s','%d','%s')" % (utxo,txs_hash,index, user_pk, value,'0')
         CURSOR.execute(sql)
         DB.commit()
     elif choice == 8:  # 查找用户公钥
