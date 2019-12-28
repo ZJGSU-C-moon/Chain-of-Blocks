@@ -426,7 +426,8 @@ def generate_utxo(pk, sk, value):
     total = 0
     result = []
     for utxo, val in utxos.items():
-        signature = sign(sm3(utxo), sk)
+        tx_hash = db_operate(choice=11, utxo=utxo)[0]
+        signature = sign(tx_hash, sk)
         prev_tx_hash, idx = db_operate(choice=11, utxo=utxo)
         result.append([prev_tx_hash, idx, signature])
         db_operate(choice=10, utxo=utxo)
@@ -477,6 +478,7 @@ def verify_txs(txs):
             prev_tx_hex = db_operate(choice=12, tx_hash=e)
             prev_tx = parse_tx(prev_tx_hex.decode('hex')).get_tx()
             pk = prev_tx.tx_outputs[idx].scriptPubKey
+            print signature, e, pk
             res = verify(signature, e, pk)
             if res == False:
                 return False
@@ -485,12 +487,12 @@ def verify_txs(txs):
 
 def mining(txs, miner_pk, info=''):
     version = 1
-    prev_hash = db_operate(9)
+    prev_hash = db_operate(choice=9)
     coinbase = create_tx(src_pk='0'*64, dst_pk=miner_pk, info=info, is_coinbase=True)
     txs.append(coinbase)
-    #if verify_txs(txs) == False:
-    #    print '[!] Transactions invalid...'
-    #    return False
+    if verify_txs(txs) == False:
+        print '[!] Transactions invalid...'
+        return False
     tx_hashes = cal_tx_hashes(txs)
     merkle_root = cal_merkle_root(tx_hashes)
     timestamp = int(time.time())

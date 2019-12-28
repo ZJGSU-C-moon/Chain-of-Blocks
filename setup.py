@@ -24,7 +24,7 @@ sql = "USE chain;"
 cursor.execute(sql)
 db.commit()
 
-sql = "CREATE TABLE UTXO(id INT PRIMARY KEY AUTO_INCREMENT, UTXO TEXT(500), TX_HASH TEXT(100), IDX CHAR(10), OWNER TEXT(800), VALUE CHAR(10), IF_USE CHAR(1));"
+sql = "CREATE TABLE UTXO(id INT PRIMARY KEY AUTO_INCREMENT, UTXO TEXT(500), TX_HASH TEXT(100), IDX CHAR(10), OWNER TEXT(800), VALUE CHAR(20), IF_USE CHAR(1));"
 cursor.execute(sql)
 db.commit()
 
@@ -53,7 +53,7 @@ passwd = ''
 for i in range(8):
     passwd += string.printable[random.randint(0, 93)]
 print '[!] passwd =', passwd
-db_operate(4, 'admin', sm3(passwd), [pk, sk])
+db_operate(choice=4, username='admin', password=sm3(passwd), key=[pk, sk])
 
 print 'Now start creating genesis block!'
 info = 'this is a small blockchain system based on sm.'

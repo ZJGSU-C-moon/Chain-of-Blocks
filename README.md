@@ -5,6 +5,6 @@ Our Final Work of Cryptocurrencies and Blockchain Technology. A mini coin (using
 ## TODO
 
 - P2P
-- Verify tx (P2PK)
+- P2PKH (now is P2PK)
 - Miner's fee
 

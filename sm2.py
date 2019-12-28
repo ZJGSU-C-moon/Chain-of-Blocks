@@ -20,8 +20,6 @@ Fp = 256
 len_para = 64
 
 # 随机获得一个16进制的数
-
-
 def get_random_str(strlen):
     letterlist = ['0', '1', '2', '3', '4', '5', '6',
                   '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f']

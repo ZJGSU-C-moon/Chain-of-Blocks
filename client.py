@@ -18,7 +18,7 @@ def login():
     choice = raw_input('choose:')
     if choice == '1':
         username = raw_input('Username:')
-        result = db_operate(2, username)
+        result = db_operate(choice=2, username=username)
         if result == True:
             print "The name does not exist!"
             return False
@@ -33,13 +33,13 @@ def login():
             return True
     elif choice == '2':
         username = raw_input('Username:')
-        result = db_operate(2, username)
+        result = db_operate(choice=2, username=username)
         if result != True:
             print "The name has been registered!"
             return False
         password = getpass.getpass()
         pk, sk = keygen()
-        db_operate(4, username, sm3(password), [pk, sk])
+        db_operate(choice=4, username=username, password=sm3(password), key=[pk, sk])
         print 'register successfully!\nyour pk:%s \nyour sk:%s' % (pk, sk)
         info['username'] = username
         info['pk'] = pk
@@ -63,7 +63,7 @@ def wallet():
     choice = raw_input('choose:')
     if choice == '1':
         dst_username = raw_input('Please input the other name:')
-        result = db_operate(2, dst_username)
+        result = db_operate(choice=2, username=dst_username)
         if result == True:
             print '[!] User does not exist...'
             return False
@@ -72,12 +72,12 @@ def wallet():
             print '[!] You do not have this money...'
             return False
         src_pk = info['pk']
-        dst_pk = db_operate(8, dst_username)
+        dst_pk = db_operate(choice=8, username=dst_username)
         tx = create_tx(src_pk=src_pk, dst_pk=dst_pk, value=value, src_sk=info['sk'])
         return True
     elif choice == '2':
         txs = []
-        tx1 = db_operate(1)
+        tx1 = db_operate(choice=1)
         txs.append(parse_tx(tx1.decode('hex')).get_tx())
         new_block = mining(txs, info['pk'])
         return True
