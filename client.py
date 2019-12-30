@@ -81,6 +81,9 @@ def wallet():
     elif choice == '2':
         txs = []
         tx1 = db_operate(choice=1)
+        if tx1 == None:
+            print '[!] No tx now...'
+            return False
         txs.append(parse_tx(tx1.decode('hex')).get_tx())
         mining(txs, info['pk'])
         return True
@@ -93,8 +96,11 @@ def wallet():
 
 
 if __name__ == '__main__':
-    while True:
-        if login():
-            break
-    while True:
-        wallet()
+    try:
+        while True:
+            if login():
+                break
+        while True:
+            wallet()
+    except KeyboardInterrupt:
+        exit()

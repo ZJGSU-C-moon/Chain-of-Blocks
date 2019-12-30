@@ -10,7 +10,8 @@ import string
 from client import wallet, info
 
 
-if __name__ == '__main__':
+def init():
+    global info
     db = MySQLdb.connect(host=db_host, user=db_user,
                          passwd=db_pass, charset='utf8')
     cursor = db.cursor()
@@ -64,5 +65,10 @@ if __name__ == '__main__':
 
     db.close()
 
-    while True:
-        wallet()
+if __name__ == '__main__':
+    try:
+        init()
+        while True:
+            wallet()
+    except KeyboardInterrupt:
+        exit()

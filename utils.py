@@ -332,13 +332,14 @@ def db_operate(choice, username=None, password=None, key=[], block_hex=None, blo
         sql = "SELECT * FROM TXS WHERE IF_PACK='0' LIMIT 1"
         CURSOR.execute(sql)
         results = CURSOR.fetchall()
+        tx = None
         for row in results:
             idx = row[0]
-            txs = row[1]
+            tx = row[1]
         sql = "UPDATE TXS SET IF_PACK='1' WHERE id = '%s'" % (idx)
         CURSOR.execute(sql)
         DB.commit()
-        return txs
+        return tx
     elif choice == 2:  # 查询用户公私钥 如果没有成功返回0,0
         sql = "SELECT * FROM USER WHERE USERNAME='%s'" % (username)
         CURSOR.execute(sql)
@@ -436,7 +437,7 @@ def get_balance(username):
     #print user_pk
     utxos = db_operate(choice=3, owner=hash160(user_pk))
     balance = 0
-    print utxos
+    #print utxos
     for val in utxos.values():
         balance += int(val)
     return balance
