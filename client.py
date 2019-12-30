@@ -55,7 +55,6 @@ def login():
 
 
 def wallet():
-    balance = get_balance(info['username'])
     print '=== Wallet interface ==='
     print 'choose an option:'
     print '1.create a tx'
@@ -69,6 +68,7 @@ def wallet():
         if result == True:
             print '[!] User does not exist...'
             return False
+        balance = get_balance(info['username'])
         value = int(raw_input('Please input the transfer value:'))
         if value > balance:
             print '[!] You do not have this money...'
@@ -88,7 +88,7 @@ def wallet():
         mining(txs, info['pk'])
         return True
     elif choice == '3':
-        print '[*] Your balance:', balance
+        print '[*] Your balance:', get_balance(info['username'])
     elif choice == '4':
         exit()
     else:
