@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 import random
-from sm2 import *
-from utils import *
+from sm3 import sm3
+from sm2 import keygen
+from utils import db_operate, get_balance, create_tx, parse_tx, mining
 import getpass
 
 
@@ -39,7 +40,8 @@ def login():
             return False
         password = getpass.getpass()
         pk, sk = keygen()
-        db_operate(choice=4, username=username, password=sm3(password), key=[pk, sk])
+        db_operate(choice=4, username=username,
+                   password=sm3(password), key=[pk, sk])
         print 'register successfully!\nyour pk:%s \nyour sk:%s' % (pk, sk)
         info['username'] = username
         info['pk'] = pk
@@ -73,13 +75,14 @@ def wallet():
             return False
         src_pk = info['pk']
         dst_pk = db_operate(choice=8, username=dst_username)
-        tx = create_tx(src_pk=src_pk, dst_pk=dst_pk, value=value, src_sk=info['sk'])
+        create_tx(src_pk=src_pk, dst_pk=dst_pk,
+                  value=value, src_sk=info['sk'])
         return True
     elif choice == '2':
         txs = []
         tx1 = db_operate(choice=1)
         txs.append(parse_tx(tx1.decode('hex')).get_tx())
-        new_block = mining(txs, info['pk'])
+        mining(txs, info['pk'])
         return True
     elif choice == '3':
         print '[*] Your balance:', balance
@@ -95,4 +98,3 @@ if __name__ == '__main__':
             break
     while True:
         wallet()
-

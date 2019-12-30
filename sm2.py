@@ -3,7 +3,7 @@
 from random import choice
 import hashlib
 import bitcoin
-from sm3 import *
+from sm3 import sm3
 
 # 选择素域，设置椭圆曲线参数
 sm2_N = int(
@@ -19,8 +19,8 @@ sm2_a_3 = (sm2_a + 3) % sm2_P  # 倍点用到的中间值
 Fp = 256
 len_para = 64
 
-# 随机获得一个16进制的数
-def get_random_str(strlen):
+
+def get_random_str(strlen):  # 随机获得一个16进制的数
     letterlist = ['0', '1', '2', '3', '4', '5', '6',
                   '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f']
     str = ''

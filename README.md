@@ -4,7 +4,7 @@ Our Final Work of Cryptocurrencies and Blockchain Technology. A mini coin (using
 
 ## TODO
 
-- P2PKH (now is P2PK)
+- P2SH (now is P2PKH)
 - Miner's fee
 - GUI
 - P2P
