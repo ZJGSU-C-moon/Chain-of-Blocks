@@ -60,7 +60,7 @@ def init():
     db_operate(choice=4, username='admin', password=sm3(passwd), key=[pk, sk])
 
     print 'Now start creating genesis block!'
-    info = 'this is a small blockchain system based on sm.'
+    info = '1712190426-QIANFEIFAN-&-1712190410-JIAXIAOFENG-&-1712190107-CHENKAIFAN'
     init_block = mining([], pk, info)
 
     db.close()

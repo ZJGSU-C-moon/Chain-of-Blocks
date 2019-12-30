@@ -69,7 +69,11 @@ def wallet():
             print '[!] User does not exist...'
             return False
         balance = get_balance(info['username'])
-        value = int(raw_input('Please input the transfer value:'))
+        try:
+            value = int(raw_input('Please input the transfer value:'))
+        except Exception as e:
+            print '[!] Input format error...'
+            return False
         if value > balance:
             print '[!] You do not have this money...'
             return False
