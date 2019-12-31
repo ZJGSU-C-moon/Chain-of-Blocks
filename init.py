@@ -65,6 +65,7 @@ def init():
 
     db.close()
 
+
 if __name__ == '__main__':
     try:
         init()
